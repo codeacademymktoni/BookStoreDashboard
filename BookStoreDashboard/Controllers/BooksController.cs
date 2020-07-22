@@ -1,19 +1,32 @@
 ﻿using BookStoreDashboard.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 
 namespace BookStoreDashboard.Controllers
 {
     public class BooksController : Controller
     {
+        private readonly string bookStoreBaseUrl;
+        private readonly string authSchema;
+        private readonly string apiKey;
+
+        public BooksController(IConfiguration configuration)
+        {
+            bookStoreBaseUrl = configuration["BookStoreApi:BaseUrl"];
+            authSchema = configuration["BookStoreApi:AuthSchema"];
+            apiKey = configuration["BookStoreApi:ApiKey"];
+        }
+
         public async Task<IActionResult> Overview()
         {
             HttpClient httpClient = new HttpClient();
 
-            var httpResponse = await httpClient.GetAsync("https://localhost:44388/api/books");
+            var httpResponse = await httpClient.GetAsync($"{bookStoreBaseUrl}/api/books");
 
             if (httpResponse.IsSuccessStatusCode)
             {
@@ -22,7 +35,6 @@ namespace BookStoreDashboard.Controllers
                 return View(books);
             }
 
-
             return RedirectToAction("Error", "Home");
         }
 
@@ -30,7 +42,7 @@ namespace BookStoreDashboard.Controllers
         {
             HttpClient httpClient = new HttpClient();
 
-            var httpResponse = await httpClient.GetAsync($"https://localhost:44388/api/books/{id}");
+            var httpResponse = await httpClient.GetAsync($"{bookStoreBaseUrl}/api/books/{id}");
 
             if (httpResponse.IsSuccessStatusCode)
             {
@@ -47,7 +59,9 @@ namespace BookStoreDashboard.Controllers
         {
             HttpClient httpClient = new HttpClient();
 
-            var httpResponse = await httpClient.PutAsJsonAsync<BookViewModel>($"https://localhost:44388/api/books", book);
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(authSchema, apiKey);
+
+            var httpResponse = await httpClient.PutAsJsonAsync<BookViewModel>($"{bookStoreBaseUrl}/api/books", book);
 
             if (httpResponse.IsSuccessStatusCode)
             {
@@ -66,7 +80,9 @@ namespace BookStoreDashboard.Controllers
         {
             HttpClient _client = new HttpClient();
 
-            var response = await _client.DeleteAsync($"https://localhost:44388/api/Books/{id}");
+            _client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(authSchema, apiKey);
+
+            var response = await _client.DeleteAsync($"{bookStoreBaseUrl}/api/Books/{id}");
 
             return RedirectToAction(nameof(Overview));
         }
